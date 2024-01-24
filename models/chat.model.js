@@ -6,9 +6,8 @@ const Chat = db.define("Chat", {
     type: DataTypes.UUID,
     defaultValue: DataTypes.UUIDV4,
     primaryKey: true,
-    allowNull: false,
   },
-  ownerId: {
+  owner_id: {
     type: DataTypes.UUID,
     allowNull: true, // Для групповых чатов
   },

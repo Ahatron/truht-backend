@@ -12,6 +12,7 @@ const authenticate = (req, res, next) => {
     req.user = decoded; // Добавить раскодированные данные в объект запроса
     next(); // Продолжить выполнение следующего middleware или маршрута
   } catch (error) {
+    console.error(error);
     return res.status(401).json({ message: "Неверный токен авторизации." });
   }
 };

@@ -2,8 +2,9 @@ import express from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
-import userRoutes from "./routes/user.routes.js";
+import router from "./routes/index.js";
 import db from "./db.js";
+import multer from "multer";
 
 const ALLOWED_ORIGIN = "http://localhost:3000";
 const port = process.env.PORT || 8080;
@@ -22,7 +23,22 @@ app
 const server = createServer(app);
 const io = new Server(server, { cors: { origin: ALLOWED_ORIGIN } });
 
-app.use("/api", userRoutes);
+const storage = multer.diskStorage({
+  destination: function (_, file, cb) {
+    let destination = "./uploads/media";
+    if (file.mimetype.startsWith("image/")) destination += "/images";
+    else if (file.mimetype.startsWith("video/")) destination += "/videos";
+
+    cb(null, destination);
+  },
+  filename: function (_, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname); // Имя файла после сохранения
+  },
+});
+
+const upload = multer({ storage: storage });
+
+app.use("/api", upload.array("files"), router);
 
 app.use((_, res) => {
   res.status(404).send("Страница не найдена");

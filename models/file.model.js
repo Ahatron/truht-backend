@@ -5,28 +5,21 @@ const File = db.define(
   "File",
   {
     id: {
-      type: DataTypes.INTEGER,
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
-      autoIncrement: true,
     },
     filename: {
       type: DataTypes.STRING,
-      allowNull: false,
-    },
-    size: {
-      type: DataTypes.INTEGER,
       allowNull: false,
     },
     mime_type: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    userId: {
-      type: DataTypes.INTEGER,
-      references: {
-        model: User,
-        key: "id",
-      },
+    path: {
+      type: DataTypes.STRING,
+      allowNull: false,
     },
   },
   {
