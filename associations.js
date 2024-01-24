@@ -15,13 +15,9 @@ Message.belongsTo(Chat);
 User.hasMany(Message);
 Message.belongsTo(User);
 // Files
-
-File.belongsTo(User, { foreignKey: "userId" }); // Определение отношения: файл принадлежит пользователю
-User.hasMany(File, { foreignKey: "userId" });
+// Определение отношения: файл принадлежит пользователю
 
 // Post
-
-
 
 Post.belongsToMany(User, { through: Like });
 User.belongsToMany(Post, { through: Like });
