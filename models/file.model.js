@@ -21,6 +21,10 @@ const File = db.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
+    size: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+    },
   },
   {
     timestamps: true,

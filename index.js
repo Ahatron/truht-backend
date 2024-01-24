@@ -5,6 +5,7 @@ import cors from "cors";
 import router from "./routes/index.js";
 import db from "./db.js";
 import multer from "multer";
+import createDirectiories from "./utils/mkdirs.utils.js";
 
 const ALLOWED_ORIGIN = "http://localhost:3000";
 const port = process.env.PORT || 8080;
@@ -23,9 +24,21 @@ app
 const server = createServer(app);
 const io = new Server(server, { cors: { origin: ALLOWED_ORIGIN } });
 
+const uplaods = {
+  path: "/uploads",
+  childs: [
+    {
+      path: "/media",
+      childs: [{ path: "/images" }, { path: "/videos" }],
+    },
+  ],
+};
+
+createDirectiories(uplaods, ".");
+
 const storage = multer.diskStorage({
   destination: function (_, file, cb) {
-    let destination = "./uploads/media";
+    let destination = "." + uplaods.path + "/media";
     if (file.mimetype.startsWith("image/")) destination += "/images";
     else if (file.mimetype.startsWith("video/")) destination += "/videos";
 
@@ -62,7 +75,8 @@ io.on("connection", (socket) => {
 
 async function startApp() {
   try {
-    await db.sync();
+    await db.sync({ alter: true });
+    console.log("All models were synchronized successfully.");
     server.listen(port, () => {
       console.log(`Server is running at http://localhost:${port}`);
     });

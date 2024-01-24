@@ -5,16 +5,27 @@ import File from "../models/file.model.js";
 User.hasMany(Post);
 Post.belongsTo(User);
 
+User.hasMany(File);
+File.belongsTo(User);
+
 Post.hasMany(File);
 File.belongsTo(Post);
 
 class PostService {
   async post(postData, postFiles, userId) {
     const user = await User.findOne({ where: { id: userId } }),
-      post = await Post.build(postData?.text ? { text: postData.text } : {});
-    if (postFiles) {
-      const files = await File.build(postFiles);
-      await post.addFiles(files);
+      post = await Post.create(postData?.text ? { text: postData.text } : {});
+    if (postFiles?.length) {
+      postFiles.forEach(async ({ mimetype, destination, filename, size }) => {
+        const createdFile = await File.create({
+          filename,
+          mime_type: mimetype,
+          path: destination,
+          size,
+        });
+        await user.addFile(createdFile);
+        await post.addFile(createdFile);
+      });
     }
 
     await user.addPost(post);
