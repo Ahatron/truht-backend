@@ -15,18 +15,17 @@ class PostService {
   async post(postData, postFiles, userId) {
     const user = await User.findOne({ where: { id: userId } }),
       post = await Post.create(postData?.text ? { text: postData.text } : {});
-    if (postFiles?.length) {
-      postFiles.forEach(async ({ mimetype, destination, filename, size }) => {
-        const createdFile = await File.create({
-          filename,
-          mime_type: mimetype,
-          path: destination,
-          size,
-        });
-        await user.addFile(createdFile);
-        await post.addFile(createdFile);
+
+    postFiles?.forEach(async ({ mimetype, destination, filename, size }) => {
+      const createdFile = await File.create({
+        filename,
+        mimetype,
+        path: destination,
+        size,
       });
-    }
+      await user.addFile(createdFile);
+      await post.addFile(createdFile);
+    });
 
     await user.addPost(post);
   }
@@ -37,6 +36,9 @@ class PostService {
         required: false, // Это говорит Sequelize использовать left join
       },
     });
+  }
+  async removeAll() {
+    return await Post.truncate({ cascade: true });
   }
 }
 

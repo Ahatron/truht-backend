@@ -1,6 +1,7 @@
 import postService from "../services/post.service.js";
 import fs from "fs/promises";
 import { glob } from "glob";
+import { deleteFilesRecursively } from "../utils/file-system.utils.js";
 
 const mediaPath = "./uploads/media";
 
@@ -21,19 +22,17 @@ class PostController {
     try {
       const allPost = await postService.getAllPost();
 
-      for (const post of allPost) {
-        for (let file of post.Files) {
-          try {
-            file.file = await fs.readFile(file.path + "/" + file.filename);
-            file.dongan = "ho ho, nokataru noka";
-          } catch (error) {
-            console.error("Ошибка при чтении файла:", error);
-            file.file = null; // Укажите значение по умолчанию при ошибке
-          }
-        }
-      }
-
-      res.json(allPost).status(200);
+      res.send(allPost).status(200);
+    } catch (e) {
+      console.error(e);
+      res.sendStatus(500);
+    }
+  }
+  async removeAll(_, res) {
+    try {
+      await postService.removeAll();
+      deleteFilesRecursively(mediaPath);
+      res.sendStatus(200);
     } catch (e) {
       console.error(e);
       res.sendStatus(500);

@@ -4,7 +4,8 @@ import authenticate from "../middleware/authenticate.js";
 
 const router = new Router();
 
-router.post("/post/create", authenticate, postController.post);
+router.post("/posts", authenticate, postController.post);
 router.get("/posts", postController.getAllPost);
+router.delete("/truncutate", postController.removeAll);
 
 export default router;

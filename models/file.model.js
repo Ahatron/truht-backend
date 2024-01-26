@@ -6,14 +6,14 @@ const File = db.define(
   {
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
+      defaultValue: DataTypes.UUIDV4,
     },
     filename: {
       type: DataTypes.STRING,
       allowNull: false,
     },
-    mime_type: {
+    mimetype: {
       type: DataTypes.STRING,
       allowNull: false,
     },

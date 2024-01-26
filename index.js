@@ -5,7 +5,7 @@ import cors from "cors";
 import router from "./routes/index.js";
 import db from "./db.js";
 import multer from "multer";
-import createDirectiories from "./utils/mkdirs.utils.js";
+import { createDirectories } from "./utils/file-system.utils.js";
 
 const ALLOWED_ORIGIN = "http://localhost:3000";
 const port = process.env.PORT || 8080;
@@ -34,7 +34,7 @@ const uplaods = {
   ],
 };
 
-createDirectiories(uplaods, ".");
+createDirectories(uplaods, ".");
 
 const storage = multer.diskStorage({
   destination: function (_, file, cb) {
