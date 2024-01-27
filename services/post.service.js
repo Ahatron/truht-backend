@@ -29,12 +29,13 @@ class PostService {
 
     await user.addPost(post);
   }
-  async getAllPost() {
+  async getPosts() {
     return await Post.findAll({
-      include: {
-        model: File,
-        required: false, // Это говорит Sequelize использовать left join
-      },
+      order: [["createdAt", "DESC"]],
+      include: [
+        { model: File, required: false, attributes: ["id"] },
+        { model: User, required: true, attributes: ["nickname"] },
+      ],
     });
   }
   async removeAll() {

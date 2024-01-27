@@ -9,7 +9,8 @@ class PostController {
   async post(req, res) {
     try {
       const files = req.files;
-      console.log(req.files);
+      if (files.length > 6)
+        res.json({ message: "files no more than 6" }).status(409);
       await postService.post(req.body, files, req.user.id);
 
       res.sendStatus(200);
@@ -18,11 +19,11 @@ class PostController {
       res.sendStatus(500);
     }
   }
-  async getAllPost(req, res) {
+  async getPosts(req, res) {
     try {
-      const allPost = await postService.getAllPost();
+      const allPost = await postService.getPosts();
 
-      res.send(allPost).status(200);
+      res.json(allPost).status(200);
     } catch (e) {
       console.error(e);
       res.sendStatus(500);
