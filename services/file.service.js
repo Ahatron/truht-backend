@@ -1,11 +1,15 @@
 import File from "../models/file.model.js";
-import path from "path";
 
 class FileService {
   async getFile(fileId) {
-    const { path, filename } = await File.findOne({ where: { id: fileId } });
+    const file = await File.findOne({ where: { id: fileId } });
 
-    return path + "/" + filename;
+    if (file?.path) {
+      const { path, filename } = file;
+      return path + "/" + filename;
+    }
+
+    throw "File is not exsists";
   }
 }
 
