@@ -1,9 +1,6 @@
 import fileService from "../services/file.service.js";
 import path from "path";
 
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-
 class FileController {
   async getFile(req, res) {
     const { fileId } = req.params;

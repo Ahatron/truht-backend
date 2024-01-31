@@ -13,7 +13,7 @@ const File = db.define(
       type: DataTypes.STRING,
       allowNull: false,
     },
-    mime_type: {
+    mimetype: {
       type: DataTypes.STRING,
       allowNull: false,
     },

@@ -33,7 +33,7 @@ class PostService {
     return await Post.findAll({
       order: [["createdAt", "DESC"]],
       include: [
-        { model: File, required: false, attributes: ["id"] },
+        { model: File, required: false, attributes: ["id", "filename"] },
         { model: User, required: true, attributes: ["nickname"] },
       ],
     });
