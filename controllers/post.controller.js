@@ -8,9 +8,12 @@ const mediaPath = "./uploads/media";
 class PostController {
   async post(req, res) {
     try {
-      const files = req.files;
-      if (files.length > 6)
+      console.log(req.body);
+      const files = req.body.files;
+      if (files?.length > 6) {
         res.json({ message: "files no more than 6" }).status(409);
+      }
+
       await postService.post(req.body, files, req.user.id);
 
       res.sendStatus(200);

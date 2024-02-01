@@ -13,13 +13,17 @@ File.belongsTo(Post);
 
 class PostService {
   async post(postData, postFiles, userId) {
+    if (!postFiles?.length && !postData?.text.length) {
+      throw "Cannot creating post without content";
+    }
+
     const user = await User.findOne({ where: { id: userId } }),
       post = await Post.create(postData?.text ? { text: postData.text } : {});
 
-    postFiles?.forEach(async ({ mimetype, destination, filename, size }) => {
+    postFiles?.forEach(async ({ type, destination, name, size }) => {
       const createdFile = await File.create({
-        filename,
-        mimetype,
+        filename: name,
+        mimetype: type,
         path: destination,
         size,
       });
