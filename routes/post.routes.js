@@ -7,5 +7,6 @@ const router = new Router();
 router.post("/post", authenticate, postController.post);
 router.get("/posts", postController.getPosts);
 router.delete("/truncutate", postController.removeAll);
+router.post("/post/like", authenticate, postController.likeToggle);
 
 export default router;

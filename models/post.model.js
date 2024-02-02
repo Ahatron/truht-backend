@@ -13,23 +13,17 @@ const Post = db.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
+    likesCount: {
+      type: DataTypes.INTEGER,
+      defaultValue: 0,
+    },
   },
   {
     timestamps: true,
   }
 );
 
-const Like = db.define(
-  "Like",
-  {
-    id: {
-      type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
-      primaryKey: true,
-    },
-  },
-  { timestamps: true }
-);
+const Like = db.define("Like", {}, { timestamps: true });
 
 const Comment = db.define(
   "Comment",

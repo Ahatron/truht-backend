@@ -19,8 +19,6 @@ Message.belongsTo(User);
 
 // Post
 
-Post.belongsToMany(User, { through: Like });
-User.belongsToMany(Post, { through: Like });
 Post.belongsToMany(User, { through: File });
 User.belongsToMany(Post, { through: File });
 
