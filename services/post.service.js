@@ -1,4 +1,4 @@
-import Post, { Like } from "../models/post.model.js";
+import Post, { Like, Comment } from "../models/post.model.js";
 import User from "../models/user.model.js";
 import File from "../models/file.model.js";
 
@@ -11,41 +11,44 @@ File.belongsTo(User);
 Post.hasMany(File);
 File.belongsTo(Post);
 
+Comment.hasMany(File);
+File.belongsTo(Comment);
+
 User.hasMany(Like, { foreignKey: "userId" });
-Post.hasMany(Like, { foreignKey: "postId" });
+Post.hasMany(Like, { foreignKey: "contentId" });
 
 Like.belongsTo(User, { foreignKey: "userId" });
-Like.belongsTo(Post, { foreignKey: "postId" });
+Like.belongsTo(Post, { foreignKey: "contentId" });
+
+User.hasMany(Comment, { foreignKey: "userId" });
+Post.hasMany(Comment, { foreignKey: "postId" });
+
+Comment.hasMany(Like, { foreignKey: "userId" });
+Like.belongsTo(Comment, { foreignKey: "contentId" });
+
+Comment.belongsTo(User, { foreignKey: "userId" });
+Comment.belongsTo(Post, { foreignKey: "postId" });
 
 class PostService {
-  async post(postData, postFiles, userId) {
-    if (
-      (!postFiles?.length || !Object.keys(postFiles[0]).length) &&
-      !postData?.text.length
-    ) {
+  async post(postData, userId) {
+    const { text, files } = postData;
+    if (!files?.length && !Object.keys(files[0]).length && !text.length) {
       throw "Cannot creating post without content";
     }
 
     const user = await User.findOne({ where: { id: userId } }),
-      post = await Post.create({ text: postData?.text });
+      post = await Post.create({ text });
 
-    if (postFiles?.length && Object.keys(postFiles[0]).length) {
-      for (const {
-        type,
-        mimetype,
-        destination,
-        name,
-        filename,
-        size,
-      } of postFiles) {
-        const createdFile = await File.create({
-          filename: name || filename,
-          mimetype: type || mimetype,
+    if (files?.length && Object.keys(files[0]).length) {
+      for (const { mimetype, destination, filename, size } of files) {
+        const file = await File.create({
+          filename,
+          mimetype,
           path: destination,
           size,
         });
-        await user.addFile(createdFile);
-        await post.addFile(createdFile);
+        await user.addFile(file);
+        await post.addFile(file);
       }
     }
 
@@ -57,10 +60,22 @@ class PostService {
       include: [
         { model: File, required: false, attributes: ["id", "filename"] },
         { model: User, required: true, attributes: ["nickname"] },
-        { model: Like, required: false },
+        { model: Like, required: false, attributes: ["id"] },
+        { model: Comment, required: false },
       ],
     });
     return post;
+  }
+  async getPost(postId) {
+    return Post.findOne({
+      where: { id: postId },
+      include: [
+        { model: File, required: false, attributes: ["id", "filename"] },
+        { model: User, required: true, attributes: ["nickname"] },
+        { model: Like, required: false, attributes: ["id"] },
+        { model: Comment, required: false },
+      ],
+    });
   }
   async removeAll() {
     return await Post.truncate({ cascade: true });
@@ -68,16 +83,43 @@ class PostService {
   async likeToggle(postId, userId) {
     const post = await Post.findOne({ where: { id: postId } }),
       user = await User.findOne({ where: { id: userId } }),
-      userLike = await Like.findOne({ where: { postId, userId } });
+      userLike = await Like.findOne({ where: { contentId: postId, userId } });
 
     if (userLike) {
       await userLike.destroy();
     } else if (post && user) {
-      const like = await Like.create({ userId, postId });
+      const like = await Like.create({ contentId: postId, postId });
 
       await post.addLike(like);
       await user.addLike(like);
     }
+  }
+  async addComment(text, files, postId, userId) {
+    if (
+      !files?.length &&
+      !Object.keys(files[0] || {}).length &&
+      !text?.length
+    ) {
+      throw "Cannot creating post without content";
+    }
+    const user = await User.findOne({ where: { id: userId } }),
+      post = await Post.findOne({ where: { id: postId } }),
+      comment = await Comment.create({ text });
+
+    if (files?.length && Object.keys(files[0]).length) {
+      for (const { mimetype, destination, filename, size } of files) {
+        const file = await File.create({
+          filename,
+          mimetype,
+          path: destination,
+          size,
+        });
+        await user.addFile(file);
+        await comment.addFile(file);
+      }
+    }
+    await user.addComment(comment);
+    await post.addComment(comment);
   }
 }
 
