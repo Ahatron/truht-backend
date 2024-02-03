@@ -2,37 +2,44 @@ import Post, { Like, Comment } from "../models/post.model.js";
 import User from "../models/user.model.js";
 import File from "../models/file.model.js";
 
-User.hasMany(Post);
-Post.belongsTo(User);
+User.hasMany(Post, { as: "posts", foreignKey: "authorId" });
+Post.belongsTo(User, {
+  as: "author",
+  foreignKey: "authorId",
+  onDelete: "CASCADE",
+});
 
-User.hasMany(File);
+User.hasMany(File, { as: "files" });
 File.belongsTo(User);
 
-Post.hasMany(File);
-File.belongsTo(Post);
+Post.hasMany(File, { as: "files" });
+File.belongsTo(Post, { onDelete: "CASCADE" });
 
-Comment.hasMany(File);
-File.belongsTo(Comment);
+Comment.hasMany(File, { as: "files" });
+File.belongsTo(Comment, { onDelete: "CASCADE" });
 
-User.hasMany(Like, { foreignKey: "userId" });
-Post.hasMany(Like, { foreignKey: "contentId" });
+User.hasMany(Like, { foreignKey: "userId", as: "likes" });
+Like.belongsTo(User, { foreignKey: "userId", onDelete: "CASCADE" });
 
-Like.belongsTo(User, { foreignKey: "userId" });
-Like.belongsTo(Post, { foreignKey: "contentId" });
+Post.hasMany(Like, { foreignKey: "postId", as: "likes" });
+Like.belongsTo(Post, { foreignKey: "postId", onDelete: "CASCADE" });
 
-User.hasMany(Comment, { foreignKey: "userId" });
-Post.hasMany(Comment, { foreignKey: "postId" });
+User.hasMany(Comment, { foreignKey: "userId", as: "comments" });
+Comment.belongsTo(User, { foreignKey: "userId", as: "author" });
 
-Comment.hasMany(Like, { foreignKey: "userId" });
-Like.belongsTo(Comment, { foreignKey: "contentId" });
+Post.hasMany(Comment, { foreignKey: "postId", as: "comments" });
+Comment.belongsTo(Post, { foreignKey: "postId", onDelete: "CASCADE" });
 
-Comment.belongsTo(User, { foreignKey: "userId" });
-Comment.belongsTo(Post, { foreignKey: "postId" });
+Comment.hasMany(Like, { foreignKey: "commentId", as: "likes" });
+Like.belongsTo(Comment, { foreignKey: "commentId", onDelete: "CASCADE" });
+
+Comment.hasMany(Comment, { as: "answers", foreignKey: "parentId" });
+Comment.belongsTo(Comment, { as: "parent", foreignKey: "parentId" });
 
 class PostService {
-  async post(postData, userId) {
-    const { text, files } = postData;
-    if (!files?.length && !Object.keys(files[0]).length && !text.length) {
+  async post(text, files, userId) {
+    console.log(text, files);
+    if (!files?.length && files[0]?.keys().length && !text.length) {
       throw "Cannot creating post without content";
     }
 
@@ -58,22 +65,68 @@ class PostService {
     const post = await Post.findAll({
       order: [["createdAt", "DESC"]],
       include: [
-        { model: File, required: false, attributes: ["id", "filename"] },
-        { model: User, required: true, attributes: ["nickname"] },
-        { model: Like, required: false, attributes: ["id"] },
-        { model: Comment, required: false },
+        {
+          model: File,
+          required: false,
+          attributes: ["id", "filename"],
+          as: "files",
+        },
+        { model: User, required: true, attributes: ["nickname"], as: "author" },
+        { model: Like, required: false, attributes: ["id"], as: "likes" },
+        {
+          model: Comment,
+          required: false,
+          as: "comments",
+          include: [
+            {
+              model: User,
+              attributes: ["nickname"],
+              as: "author",
+            },
+            {
+              model: Comment,
+              required: false,
+              order: [["createdAt", "DESC"]],
+              as: "answers",
+            },
+            { model: Like, attributes: ["id"], required: false, as: "likes" },
+          ],
+        },
       ],
     });
     return post;
   }
   async getPost(postId) {
-    return Post.findOne({
+    return await Post.findOne({
       where: { id: postId },
       include: [
-        { model: File, required: false, attributes: ["id", "filename"] },
-        { model: User, required: true, attributes: ["nickname"] },
-        { model: Like, required: false, attributes: ["id"] },
-        { model: Comment, required: false },
+        {
+          model: File,
+          required: false,
+          attributes: ["id", "filename"],
+          as: "files",
+        },
+        { model: User, required: true, attributes: ["nickname"], as: "author" },
+        { model: Like, required: false, attributes: ["id"], as: "likes" },
+        {
+          model: Comment,
+          required: false,
+          as: "comments",
+          include: [
+            {
+              model: User,
+              attributes: ["nickname"],
+              as: "author",
+            },
+            {
+              model: Comment,
+              required: false,
+              order: [["createdAt", "DESC"]],
+              as: "answers",
+            },
+            { model: Like, attributes: ["id"], required: false, as: "likes" },
+          ],
+        },
       ],
     });
   }
@@ -83,12 +136,12 @@ class PostService {
   async likeToggle(postId, userId) {
     const post = await Post.findOne({ where: { id: postId } }),
       user = await User.findOne({ where: { id: userId } }),
-      userLike = await Like.findOne({ where: { contentId: postId, userId } });
+      isLiked = await Like.findOne({ where: { contentId: postId, userId } });
 
-    if (userLike) {
-      await userLike.destroy();
-    } else if (post && user) {
-      const like = await Like.create({ contentId: postId, postId });
+    if (isLiked) {
+      await isLiked.destroy();
+    } else {
+      const like = await Like.create({ postId, userId });
 
       await post.addLike(like);
       await user.addLike(like);
@@ -100,7 +153,7 @@ class PostService {
       !Object.keys(files[0] || {}).length &&
       !text?.length
     ) {
-      throw "Cannot creating post without content";
+      throw "Cannot add comment without content";
     }
     const user = await User.findOne({ where: { id: userId } }),
       post = await Post.findOne({ where: { id: postId } }),
@@ -118,8 +171,67 @@ class PostService {
         await comment.addFile(file);
       }
     }
+
     await user.addComment(comment);
     await post.addComment(comment);
+  }
+  async addCommentAnswer(text, files, postId, userId, parentId) {
+    if (
+      !files?.length &&
+      !Object.keys(files[0] || {}).length &&
+      !text?.length
+    ) {
+      throw "Cannot add answer without content";
+    }
+    const user = await User.findOne({ where: { id: userId } }),
+      post = await Post.findOne({ where: { id: postId } }),
+      comment = await Comment.findOne({ where: { id: parentId } }),
+      answer = await Comment.create({ text });
+
+    if (files?.length && Object.keys(files[0]).length) {
+      for (const { mimetype, destination, filename, size } of files) {
+        const file = await File.create({
+          filename,
+          mimetype,
+          path: destination,
+          size,
+        });
+        await user.addFile(file);
+        await answer.addFile(file);
+      }
+    }
+
+    await comment.addAnswer(answer);
+    await user.addComment(answer);
+    await post.addComment(answer);
+  }
+  async getAnswers(parentId, postId) {
+    return await Comment.findOne({
+      where: { id: parentId, postId },
+      attributes: null,
+      include: [
+        {
+          model: Comment,
+          required: true,
+          order: [["createdAt", "DESC"]],
+          as: "answers",
+        },
+      ],
+    });
+  }
+  async commentLikeToggle(commentId, userId) {
+    const comment = await Comment.findOne({ where: { id: commentId } }),
+      user = await User.findOne({ where: { id: userId } }),
+      isLiked = await Like.findOne({ where: { commentId, userId } });
+
+    if (isLiked) {
+      await isLiked.destroy();
+    } else {
+      const like = await Like.create({ commentId, userId });
+
+      await comment.addLike(like);
+      await user.addLike(like);
+    }
   }
 }
 

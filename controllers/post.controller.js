@@ -10,11 +10,11 @@ class PostController {
         res.json({ message: "files no more than 6" }).status(409);
       }
 
-      await postService.post(req.body, req.user.id);
+      await postService.post(req.body.text, req.files, req.user.id);
 
       res.sendStatus(200);
     } catch (e) {
-      console.error(e.parent);
+      console.error(e);
       res.sendStatus(500);
     }
   }
@@ -68,6 +68,43 @@ class PostController {
     } catch (e) {
       console.error("Comment add error: \n", e);
       res.json({ message: "Comment add error" }).status(500);
+    }
+  }
+  async addCommentAnswer(req, res) {
+    try {
+      await postService.addComment(
+        req.body.text,
+        req.files,
+        req.params.postId,
+        req.user.id,
+        req.params.commentId
+      );
+      res.json({ message: "Answer is added" }).status(200);
+    } catch (e) {
+      console.error("Answer add error: \n", e);
+      res.json({ message: "Answer add error" }).status(500);
+    }
+  }
+  async getAnswers(req, res) {
+    try {
+      const answers = await postService.getAnswers(
+        req.params.commentId,
+        req.params.postId
+      );
+
+      res.json(answers).status(200);
+    } catch (e) {
+      console.error("Get comment error: \n", e);
+      res.json({ message: "Get comment error" }).status(500);
+    }
+  }
+  async commentLikeToggle(req, res) {
+    try {
+      await postService.commentLikeToggle(req.params.commentId, req.user.id);
+      res.sendStatus(200);
+    } catch (e) {
+      console.error("Comment liking error: \n", e);
+      res.json("Comment liking error").status(500);
     }
   }
 }

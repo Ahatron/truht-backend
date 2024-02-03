@@ -13,10 +13,6 @@ const Post = db.define(
       type: DataTypes.STRING,
       allowNull: true,
     },
-    likesCount: {
-      type: DataTypes.INTEGER,
-      defaultValue: 0,
-    },
   },
   {
     timestamps: true,
